@@ -1,21 +1,35 @@
+#!/bin/bash
+# Single GPU version without distributed launcher
 export WANDB_BASE_URL="https://api.wandb.ai"
 export WANDB_MODE=offline
 export WANDB_API_KEY="0fa0d98600c7e9cae06a14debb71ced7b8dd2a63"
 export TRITON_CACHE_DIR=/tmp/triton_cache
 DATA_DIR=/DATA/disk1/lpy_a100_4/huggingface/mini_i2v_dataset/crush-smol_preprocessed/combined_parquet_dataset
 VALIDATION_DIR=/DATA/disk1/lpy_a100_4/huggingface/mini_i2v_dataset/crush-smol_raw/validation.json
-NUM_GPUS=8
+
+# Single GPU settings
+export CUDA_VISIBLE_DEVICES=0
 export FASTVIDEO_ATTENTION_BACKEND=FLASH_ATTN
 export TOKENIZERS_PARALLELISM=false
-export NCCL_DEBUG=INFO
-export NCCL_IB_DISABLE=1
-export NCCL_P2P_DISABLE=1
-export NCCL_SHM_DISABLE=0
+export CUDA_LAUNCH_BLOCKING=1
+
+# Initialize distributed with environment variables for single process
+export RANK=0
+export LOCAL_RANK=0
+export WORLD_SIZE=1
+export MASTER_ADDR=localhost
+export MASTER_PORT=29500
 
 MODEL_PATH=/DATA/disk1/lpy_a100_4/huggingface/Wan2.1-T2V-1.3B-Diffusers
-# make sure that num_latent_t is a multiple of sp_size
-torchrun --nnodes 1 --nproc_per_node $NUM_GPUS \
-    fastvideo/training/wan_distillation_pipeline.py \
+
+echo "=================================="
+echo "Running SINGLE GPU version with:"
+echo "  - Direct python execution"
+echo "  - FLASH_ATTN attention backend"
+echo "  - CUDA_LAUNCH_BLOCKING=1"
+echo "=================================="
+
+python fastvideo/training/wan_distillation_pipeline.py \
     --model_path $MODEL_PATH \
     --real_score_model_path $MODEL_PATH \
     --fake_score_model_path $MODEL_PATH \
@@ -28,8 +42,8 @@ torchrun --nnodes 1 --nproc_per_node $NUM_GPUS \
     --num_latent_t 20 \
     --sp_size 1 \
     --tp_size 1 \
-    --num_gpus $NUM_GPUS \
-    --hsdp_replicate_dim $NUM_GPUS  \
+    --num_gpus 1 \
+    --hsdp_replicate_dim 1 \
     --hsdp-shard-dim 1 \
     --train_sp_batch_size 1 \
     --dataloader_num_workers 0 \
@@ -38,14 +52,13 @@ torchrun --nnodes 1 --nproc_per_node $NUM_GPUS \
     --learning_rate 2e-6 \
     --mixed_precision "bf16" \
     --training_state_checkpointing_steps 400 \
-    --validation_steps 100 \
+    --validation_steps 10000 \
     --validation_sampling_steps "3" \
-    --log_validation \
     --checkpoints_total_limit 3 \
     --ema_start_step 0 \
     --training_cfg_rate 0.0 \
-    --output_dir "outputs_dmd/wan_finetune" \
-    --tracker_project_name Wan_distillation \
+    --output_dir "outputs_dmd/wan_finetune_single_gpu" \
+    --tracker_project_name Wan_distillation_single_gpu \
     --num_height 448 \
     --num_width 832 \
     --num_frames 77 \
@@ -62,5 +75,3 @@ torchrun --nnodes 1 --nproc_per_node $NUM_GPUS \
     --max_timestep_ratio 0.98 \
     --real_score_guidance_scale 3.5 \
     --seed 1024
-
-    

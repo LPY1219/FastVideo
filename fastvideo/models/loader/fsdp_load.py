@@ -105,6 +105,12 @@ def maybe_load_fsdp_model(
         use_fsdp = False
         logger.info("Disabling FSDP for MPS platform as it's not compatible")
 
+    # Disable FSDP for single GPU training to avoid distribute_tensor issues
+    world_size_check = hsdp_replicate_dim * hsdp_shard_dim
+    if world_size_check == 1:
+        use_fsdp = False
+        logger.info("Disabling FSDP for single GPU (world_size=1)")
+
     if use_fsdp:
         world_size = hsdp_replicate_dim * hsdp_shard_dim
         if not training_mode and not fsdp_inference:

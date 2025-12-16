@@ -1,8 +1,8 @@
 #!/bin/bash
 
 num_gpus=1
-export FASTVIDEO_ATTENTION_BACKEND=
-export MODEL_BASE=Wan-AI/Wan2.1-T2V-1.3B-Diffusers
+export FASTVIDEO_ATTENTION_BACKEND=FLASH_ATTN
+export MODEL_BASE=/DATA/disk1/lpy_a100_4/huggingface/Wan2.1-T2V-1.3B-Diffusers
 # export MODEL_BASE=hunyuanvideo-community/HunyuanVideo
 # You can either use --prompt or --prompt-txt, but not both.
 fastvideo generate \

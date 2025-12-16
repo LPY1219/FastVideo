@@ -1,10 +1,16 @@
+#!/bin/bash
+# Fixed version with memory optimizations
 export WANDB_BASE_URL="https://api.wandb.ai"
 export WANDB_MODE=offline
 export WANDB_API_KEY="0fa0d98600c7e9cae06a14debb71ced7b8dd2a63"
 export TRITON_CACHE_DIR=/tmp/triton_cache
 DATA_DIR=/DATA/disk1/lpy_a100_4/huggingface/mini_i2v_dataset/crush-smol_preprocessed/combined_parquet_dataset
 VALIDATION_DIR=/DATA/disk1/lpy_a100_4/huggingface/mini_i2v_dataset/crush-smol_raw/validation.json
+
+# Use 8 GPUs with sequence parallelism
 NUM_GPUS=8
+SP_SIZE=4  # Sequence parallelism size - distributes activation memory across GPUs
+
 export FASTVIDEO_ATTENTION_BACKEND=FLASH_ATTN
 export TOKENIZERS_PARALLELISM=false
 export NCCL_DEBUG=INFO
@@ -13,7 +19,17 @@ export NCCL_P2P_DISABLE=1
 export NCCL_SHM_DISABLE=0
 
 MODEL_PATH=/DATA/disk1/lpy_a100_4/huggingface/Wan2.1-T2V-1.3B-Diffusers
-# make sure that num_latent_t is a multiple of sp_size
+
+echo "=================================="
+echo "Running FIXED version with:"
+echo "  - $NUM_GPUS GPUs"
+echo "  - sp_size=$SP_SIZE (sequence parallelism - distributes activations)"
+echo "  - dit_precision=fp32 (required by FastVideo)"
+echo "  - gradient_checkpointing=full (saves ~70% activation memory)"
+echo "=================================="
+
+# IMPORTANT: num_latent_t must be a multiple of sp_size
+# num_latent_t=20, sp_size=4 -> 20 % 4 = 0 ✓
 torchrun --nnodes 1 --nproc_per_node $NUM_GPUS \
     fastvideo/training/wan_distillation_pipeline.py \
     --model_path $MODEL_PATH \
@@ -26,10 +42,10 @@ torchrun --nnodes 1 --nproc_per_node $NUM_GPUS \
     --validation_dataset_file  "$VALIDATION_DIR" \
     --train_batch_size 1 \
     --num_latent_t 20 \
-    --sp_size 1 \
+    --sp_size $SP_SIZE \
     --tp_size 1 \
     --num_gpus $NUM_GPUS \
-    --hsdp_replicate_dim $NUM_GPUS  \
+    --hsdp_replicate_dim 2 \
     --hsdp-shard-dim 1 \
     --train_sp_batch_size 1 \
     --dataloader_num_workers 0 \
@@ -37,15 +53,15 @@ torchrun --nnodes 1 --nproc_per_node $NUM_GPUS \
     --max_train_steps 30000 \
     --learning_rate 2e-6 \
     --mixed_precision "bf16" \
+    --enable_gradient_checkpointing_type "full" \
     --training_state_checkpointing_steps 400 \
-    --validation_steps 100 \
+    --validation_steps 10000 \
     --validation_sampling_steps "3" \
-    --log_validation \
     --checkpoints_total_limit 3 \
     --ema_start_step 0 \
     --training_cfg_rate 0.0 \
-    --output_dir "outputs_dmd/wan_finetune" \
-    --tracker_project_name Wan_distillation \
+    --output_dir "outputs_dmd/wan_finetune_fixed" \
+    --tracker_project_name Wan_distillation_fixed \
     --num_height 448 \
     --num_width 832 \
     --num_frames 77 \
@@ -62,5 +78,3 @@ torchrun --nnodes 1 --nproc_per_node $NUM_GPUS \
     --max_timestep_ratio 0.98 \
     --real_score_guidance_scale 3.5 \
     --seed 1024
-
-    

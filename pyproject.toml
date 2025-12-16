@@ -7,7 +7,7 @@ name = "fastvideo"
 version = "0.1.6"
 description = "FastVideo"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: Apache Software License",
@@ -21,7 +21,7 @@ dependencies = [
     "requests>=2.32.2",
 
     # Machine Learning & Transformers
-    "transformers>=4.46.1",
+    "transformers==4.57.3",
     "tokenizers>=0.20.1",
     "sentencepiece==0.2.0",
     "timm==1.0.11",
