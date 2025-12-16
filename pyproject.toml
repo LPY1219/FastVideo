@@ -7,7 +7,7 @@ name = "fastvideo"
 version = "0.1.6"
 description = "FastVideo"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: Apache Software License",

@@ -1,22 +1,23 @@
 export WANDB_BASE_URL="https://api.wandb.ai"
 export WANDB_MODE=offline
-export WANDB_API_KEY=
+export WANDB_API_KEY="0fa0d98600c7e9cae06a14debb71ced7b8dd2a63"
 export TRITON_CACHE_DIR=/tmp/triton_cache
-DATA_DIR=mini_i2v_dataset/crush-smol_preprocessed/combined_parquet_dataset/
-VALIDATION_DIR=mini_i2v_dataset/crush-smol_raw/validation.json
-NUM_GPUS=8
+DATA_DIR=/DATA/disk1/lpy_a100_4/huggingface/mini_i2v_dataset/crush-smol_preprocessed/combined_parquet_dataset
+VALIDATION_DIR=/DATA/disk1/lpy_a100_4/huggingface/mini_i2v_dataset/crush-smol_raw/validation.json
+NUM_GPUS=1
 export FASTVIDEO_ATTENTION_BACKEND=FLASH_ATTN
 export TOKENIZERS_PARALLELISM=false
 
+MODEL_PATH=/DATA/disk1/lpy_a100_4/huggingface/Wan2.1-T2V-1.3B-Diffusers
 # make sure that num_latent_t is a multiple of sp_size
 torchrun --nnodes 1 --nproc_per_node $NUM_GPUS \
     fastvideo/training/wan_distillation_pipeline.py \
-    --model_path Wan-AI/Wan2.1-T2V-1.3B-Diffusers \
-    --real_score_model_path Wan-AI/Wan2.1-T2V-1.3B-Diffusers \
-    --fake_score_model_path Wan-AI/Wan2.1-T2V-1.3B-Diffusers \
-    --inference_mode False\
-    --pretrained_model_name_or_path Wan-AI/Wan2.1-T2V-1.3B-Diffusers \
-    --cache_dir "/home/ray/.cache" \
+    --model_path $MODEL_PATH \
+    --real_score_model_path $MODEL_PATH \
+    --fake_score_model_path $MODEL_PATH \
+    --inference_mode False \
+    --pretrained_model_name_or_path $MODEL_PATH \
+    --cache_dir "/DATA/disk1/lpy_a100_4/.cache" \
     --data_path "$DATA_DIR" \
     --validation_dataset_file  "$VALIDATION_DIR" \
     --train_batch_size 1 \
